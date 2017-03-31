@@ -1,0 +1,6 @@
+framework module Pods_Weather_MVVM_example {
+  umbrella header "Pods-Weather MVVM example-umbrella.h"
+
+  export *
+  module * { export * }
+}
