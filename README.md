@@ -1,4 +1,4 @@
 # Weather-MVVM
 This project is an example of MVVM architecture without reactive programming
 
-![](https://j.gifs.com/mwWwyn.gif | width=100)
+![](https://j.gifs.com/mwWwyn.gif =250x250)
