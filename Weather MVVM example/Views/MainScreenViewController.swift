@@ -25,16 +25,41 @@ class MainScreenViewController: UIViewController, CLLocationManagerDelegate, UIT
         self.locationManager.requestAlwaysAuthorization()
         self.locationManager.requestWhenInUseAuthorization()
         
-        if CLLocationManager.locationServicesEnabled() {
-            locationManager.delegate = self
-            locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
-            locationManager.startUpdatingLocation()
+        NVActivityIndicatorPresenter.sharedInstance.startAnimating(self.activityData)
+        self.viewModel.updateWeathers {
+            self.tableView.reloadData()
+            NVActivityIndicatorPresenter.sharedInstance.stopAnimating()
+        }
+        if self.viewModel.numberOfCities() != 0 {
+            if CLLocationManager.locationServicesEnabled() {
+                locationManager.delegate = self
+                locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
+                locationManager.startUpdatingLocation()
+            }
         }
         
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: #selector(refreshTableView(_:)), for: .valueChanged)
+        
+        if #available(iOS 10.0, *) {
+            tableView.refreshControl = refreshControl
+        } else {
+            tableView.backgroundView = refreshControl
+        }
+
     }
     
     // MARK: --TableView
-    
+    func refreshTableView(_ refreshControl: UIRefreshControl) {
+        refreshControl.endRefreshing()
+        NVActivityIndicatorPresenter.sharedInstance.startAnimating(self.activityData)
+        self.viewModel.updateWeathers {
+            self.tableView.reloadData()
+            NVActivityIndicatorPresenter.sharedInstance.stopAnimating()
+        }
+
+    }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return viewModel.numberOfCities()
     }
@@ -48,6 +73,7 @@ class MainScreenViewController: UIViewController, CLLocationManagerDelegate, UIT
         cell!.viewModel = self.viewModel.cellViewModel(index: indexPath.row)
         return cell!
     }
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         self.performSegue(withIdentifier: "toDetails", sender: indexPath.row)
         tableView.deselectRow(at: indexPath, animated: true)
@@ -61,10 +87,10 @@ class MainScreenViewController: UIViewController, CLLocationManagerDelegate, UIT
             
             self.viewModel.addWeatherByLocation(coordinate: locValue, failure: { (errorString) in
                 NVActivityIndicatorPresenter.sharedInstance.stopAnimating()
-                self.showAlert(message: errorString, cancel: "Ok")
-                
+                self.showAlert(message: errorString, cancel: "Ok")                
             }, completion: {
                 self.tableView.reloadData()
+                (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext.saveChanges()
                 NVActivityIndicatorPresenter.sharedInstance.stopAnimating()
             })
         }
@@ -90,6 +116,7 @@ class MainScreenViewController: UIViewController, CLLocationManagerDelegate, UIT
                     self.showAlert(message: errorString, cancel: "Ok")
                 }, completion: {
                     self.tableView.reloadData()
+                    (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext.saveChanges()
                     NVActivityIndicatorPresenter.sharedInstance.stopAnimating()
                 })
             }
